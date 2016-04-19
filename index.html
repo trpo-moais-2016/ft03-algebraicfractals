@@ -27,7 +27,39 @@
 
             <div class="col-md-4">
                 <div class="thumbnail">
-                   
+                    <label>Фрактал:</label>
+                    <select class="form-control" ng-model="fractal">
+                        <option ng-repeat="(type, name) in fractals" ng-bind="name" ng-value="type"></option>
+                    </select> 
+
+                    <label>Раскраска:</label>
+                    <select class="form-control" ng-model="coloringType">
+                        <option ng-repeat="(type, name) in coloring" ng-bind="name" ng-value="type"></option>
+                        <option ng-disabled="fractal != undefined && fractal != 'newtonPool'" 
+                                ng-bind="'Гибридная'" ng-value="'hybrid'"></option>
+                    </select> 
+
+                    <br>
+                    <div align="center">
+                        <button class="btn btn-default" ng-click="draw()">Построить</button>
+                    </div>
+                </div>
+
+                <div class="thumbnail">
+                    <label>Масштаб</label>
+                    <div style="text-align: center;">
+                        <div class="row">
+                            <p class="col-md-12">top: <span ng-bind="top"></span></p>
+                        </div>
+                        <div class="row">
+                            <p class="col-md-6">left: <span ng-bind="left"></span></p> 
+                            <p class="col-md-6">right: <span ng-bind="right"></span></p>
+                        </div>
+                        <div class="row">
+                            <p class="col-md-12">bottom: <span ng-bind="bottom"></span></p>
+                        </div>
+                        <button class="btn btn-default" ng-click="setUp()">Сбросить масштаб</button>
+                    </div>
                 </div>
             </div>
         </div>
