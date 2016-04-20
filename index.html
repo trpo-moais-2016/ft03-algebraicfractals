@@ -39,6 +39,20 @@
                                 ng-bind="'Гибридная'" ng-value="'hybrid'"></option>
                     </select> 
 
+                    <div ng-show="fractal == 'juliaSet'">
+                        <label>Константа Жюлиа</label>
+                        <div class="input-group">
+                            <span class="input-group-addon">x</span>
+                            <input class="form-control" ng-model="juliaConstant.x" requried type="number">
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">y</span>
+                            <input class="form-control" ng-model="juliaConstant.y" requried type="number">
+                        </div>
+                    </div>
+
+
                     <br>
                     <div align="center">
                         <button class="btn btn-default" ng-click="draw()">Построить</button>

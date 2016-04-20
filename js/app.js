@@ -33,6 +33,19 @@ app.controller("mainController", ["$scope", function($scope){
         juliaSet: juliaSet
     };
     
+    $scope.fractals = {
+        'newtonPool': 'Бассейны Ньютона',
+        'mandelbrotSet':'Множество Мандельброта',
+        'juliaSet': 'Множество Жюлиа'
+    };
+
+    $scope.coloring = {
+        'classic': 'Классическая',
+        'levels': 'Уровни',
+        'zebra': 'Зебра'
+    };
+    $scope.juliaConstant = {x: -0.12, y: 0.74};
+
     setUp();
 
     $scope.draw = function(context){
@@ -57,20 +70,6 @@ app.controller("mainController", ["$scope", function($scope){
         $scope.right = 2.8;
         $scope.bottom = -2.1;
         $scope.top = 2.1;
-
-        $scope.fractals = {
-            'newtonPool': 'Бассейны Ньютона',
-            'mandelbrotSet':'Множество Мандельброта',
-            'juliaSet': 'Множество Жюлиа'
-        };
-
-        $scope.coloring = {
-            'classic': 'Классическая',
-            'levels': 'Уровни',
-            'zebra': 'Зебра'
-        };
-
-        $scope.juliaConstant = {x: -0.12, y: 0.74};
     }
 }]);
 
