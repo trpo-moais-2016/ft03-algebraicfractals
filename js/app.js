@@ -27,7 +27,11 @@ app.directive("drawing", function($timeout){
 
 app.controller("mainController", ["$scope", function($scope){
     var ctx;
-    var fractals = {newtonPool: newtonPool}
+    var fractals = {
+        newtonPool: newtonPool,
+        mandelbrotSet: mandelbrotSet
+    }
+    
     setUp();
 
     $scope.draw = function(context){
@@ -36,8 +40,9 @@ app.controller("mainController", ["$scope", function($scope){
                                         $scope.left, $scope.right,
                                         $scope.bottom, $scope.top);
 
-        var colorize = fractals[$scope.fractal || 'newtonPool'](100, 0.001, 
-                                                                $scope.coloringType || 'classic');
+        var colorize = fractals[$scope.fractal || 'newtonPool'](100, 
+                                                                $scope.coloringType || 'classic',
+                                                                $scope);
         draw(ctx, transform, colorize);
     }
 
@@ -97,14 +102,14 @@ function createTransform(width, height, left, right, bottom, top){
     }
 }
 
-function newtonPool(n, eps, coloringType){
+function newtonPool(n, coloringType){
 
     var cos = Math.cos(Math.PI / 3),
         sin = Math.sin(Math.PI / 3),
         attractors = [
-                        new Surrounding(1, 0, eps, Colors.Red),
-                        new Surrounding(-cos,  sin, eps, Colors.Blue),
-                        new Surrounding(-cos, -sin, eps, Colors.Green)
+                        new Surrounding(1, 0, Colors.Red),
+                        new Surrounding(-cos,  sin, Colors.Blue),
+                        new Surrounding(-cos, -sin, Colors.Green)
                      ];
 
         
@@ -140,27 +145,63 @@ function newtonPool(n, eps, coloringType){
         }
 
         return Colors.White; 
-    }
 
-    function nextPoint(p){
-        var x = p.x, y = p.y;   
+        function nextPoint(p){
+            var x = p.x, y = p.y;   
 
-        return {
-            x: 2 / 3 * x + 1 / 3 * (x*x - y*y) / Math.pow(x*x + y*y, 2),
-            y: 2 / 3 * y * ( 1 - x / Math.pow(x*x + y*y, 2) )
-        };
+            return {
+                x: 2 / 3 * x + 1 / 3 * (x*x - y*y) / Math.pow(x*x + y*y, 2),
+                y: 2 / 3 * y * ( 1 - x / Math.pow(x*x + y*y, 2) )
+            };
+        }
     }
 }
 
-
-
-function Surrounding(x, y, eps, color){
+function Surrounding(x, y, color){
     this.x = x;
     this.y = y;
-    this.eps = eps;
+    this.eps = 0.0001;
     this.color = color;
 }
 
 Surrounding.prototype.contain = function(x, y) {
     return Math.abs(x - this.x) <= this.eps && Math.abs(y - this.y) <= this.eps;
 };
+
+
+function mandelbrotSet(n, coloringType, data){
+      var width = data.right - data.left,
+          height = data.top - data.bottom;
+
+      var colorings = {
+            'classic': function(i){ return Colors.Black; },
+            'zebra'  : function(i){ return i % 2 === 0 ? Colors.White : Colors.Black; },
+            'levels' : function(i, n){
+                           var brightness = n > 1 ? 255*Math.log(1+i)/Math.log(n) : 0;
+                           return [brightness, brightness, brightness];
+                       }
+                     },
+        coloring = colorings[coloringType];
+
+    return function(point){
+        var c = point,
+            z = {x: 0, y: 0};
+ 
+        for (var i = 0; i < n; i++) {
+            if(Math.abs(z.x) > width / 2 || Math.abs(z.y) > height / 2)
+                return coloring(i, n);
+
+            z = nextPoint(z);
+        }
+
+        return Colors.White; 
+
+        function nextPoint(z){
+            var x = z.x, y = z.y;   
+            return {
+                x: x*x - y*y + c.x,
+                y: 2*x*y + c.y
+            };
+        }
+    } 
+}
