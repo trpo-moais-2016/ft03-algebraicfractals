@@ -29,8 +29,9 @@ app.controller("mainController", ["$scope", function($scope){
     var ctx;
     var fractals = {
         newtonPool: newtonPool,
-        mandelbrotSet: mandelbrotSet
-    }
+        mandelbrotSet: mandelbrotSet,
+        juliaSet: juliaSet
+    };
     
     setUp();
 
@@ -68,6 +69,8 @@ app.controller("mainController", ["$scope", function($scope){
             'levels': 'Уровни',
             'zebra': 'Зебра'
         };
+
+        $scope.juliaConstant = {x: -0.12, y: 0.74};
     }
 }]);
 
@@ -145,15 +148,15 @@ function newtonPool(n, coloringType){
         }
 
         return Colors.White; 
+    }
 
-        function nextPoint(p){
-            var x = p.x, y = p.y;   
+    function nextPoint(p){
+        var x = p.x, y = p.y;   
 
-            return {
-                x: 2 / 3 * x + 1 / 3 * (x*x - y*y) / Math.pow(x*x + y*y, 2),
-                y: 2 / 3 * y * ( 1 - x / Math.pow(x*x + y*y, 2) )
-            };
-        }
+        return {
+            x: 2 / 3 * x + 1 / 3 * (x*x - y*y) / Math.pow(x*x + y*y, 2),
+            y: 2 / 3 * y * ( 1 - x / Math.pow(x*x + y*y, 2) )
+        };
     }
 }
 
@@ -168,11 +171,7 @@ Surrounding.prototype.contain = function(x, y) {
     return Math.abs(x - this.x) <= this.eps && Math.abs(y - this.y) <= this.eps;
 };
 
-
-function mandelbrotSet(n, coloringType, data){
-      var width = data.right - data.left,
-          height = data.top - data.bottom;
-
+function mandelbrotSet(n, coloringType){
       var colorings = {
             'classic': function(i){ return Colors.Black; },
             'zebra'  : function(i){ return i % 2 === 0 ? Colors.White : Colors.Black; },
@@ -188,20 +187,51 @@ function mandelbrotSet(n, coloringType, data){
             z = {x: 0, y: 0};
  
         for (var i = 0; i < n; i++) {
-            if(Math.abs(z.x) > width / 2 || Math.abs(z.y) > height / 2)
+            if(Math.abs(z.x) > 3 || Math.abs(z.y) > 3)
                 return coloring(i, n);
 
-            z = nextPoint(z);
+            z = nextPoint(z, c);
         }
 
         return Colors.White; 
-
-        function nextPoint(z){
-            var x = z.x, y = z.y;   
-            return {
-                x: x*x - y*y + c.x,
-                y: 2*x*y + c.y
-            };
-        }
     } 
+
+    function nextPoint(z, c){
+        return {
+            x: z.x*z.x - z.y*z.y + c.x,
+            y: 2*z.x*z.y + c.y
+        };
+    }
+}
+
+function juliaSet(n, coloringType, data){
+      var colorings = {
+            'classic': function(i){ return Colors.Black; },
+            'zebra'  : function(i){ return i % 2 === 0 ? Colors.White : Colors.Black; },
+            'levels' : function(i, n){
+                           var brightness = n > 1 ? 255*Math.log(1+i)/Math.log(n) : 0;
+                           return [brightness, brightness, brightness];
+                       }
+                     },
+        coloring = colorings[coloringType];
+
+    return function(z){
+        var c = data.juliaConstant;
+ 
+        for (var i = 0; i < n; i++) {
+            if(Math.abs(z.x) > 3 || Math.abs(z.y) > 3)
+                return coloring(i, n);
+
+            z = nextPoint(z, c);
+        }
+
+        return Colors.White;    
+    } 
+
+    function nextPoint(z, c){ 
+        return {
+            x: z.x*z.x - z.y*z.y + c.x,
+            y: 2*z.x*z.y + c.y
+        };
+    }
 }
