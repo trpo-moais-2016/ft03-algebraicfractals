@@ -8,17 +8,40 @@ var Colors = {
     Blue: [0, 0, 255],
     White: [255, 255, 255],
     Black: [0, 0, 0]
-}
+};
 
-app.directive("drawing", function($timeout){
+app.directive("drawing", function(){
   return {
     restrict: "A",
     link: function(scope, element, attr){
         var ctx = element[0].getContext('2d');
 
-        ctx.width = Number(attr["width"]);
-        ctx.height = Number(attr["height"]);
-        
+        ctx.width = Number(attr.width);
+        ctx.height = Number(attr.height);
+
+        element.bind('mousedown', function(event){
+            scope.mouseDowm = true;
+            scope.onDown(event);
+            scope.$apply();
+        });
+
+        element.bind('mouseup', function(){
+            scope.mouseDowm = false;
+            scope.cursor = false;
+            scope.$apply();
+        });
+
+        element.bind('mousemove', function(event){
+            scope.onMove(event);
+            scope.$apply();
+        });
+
+        element.bind('wheel', function(event){
+            scope.onScale(event);
+            scope.$apply();
+            return false;
+        });   
+
         scope.draw(ctx);
     }
   };
@@ -44,25 +67,80 @@ app.controller("mainController", ["$scope", function($scope){
         'levels': 'Уровни',
         'zebra': 'Зебра'
     };
+
     $scope.juliaConstant = {x: -0.12, y: 0.74};
+    $scope.scaling = 'plus';
 
     setUp();
 
     $scope.draw = function(context){
         ctx = ctx || context;
-        var transform = createTransform(ctx.width, ctx.height,
+
+        $scope.transform = createTransform(ctx.width, ctx.height,
                                         $scope.left, $scope.right,
                                         $scope.bottom, $scope.top);
 
-        var colorize = fractals[$scope.fractal || 'newtonPool'](100, 
+        var colorize = fractals[$scope.fractal || 'newtonPool'](50, 
                                                                 $scope.coloringType || 'classic',
                                                                 $scope);
-        draw(ctx, transform, colorize);
-    }
+        draw(ctx, $scope.transform, colorize);
+    };
 
     $scope.setUp = function(){
         setUp();
         $scope.draw();
+    };
+
+    $scope.center = {x: 0, y: 0};
+    $scope.mouse = {x: 0, y: 0};
+    $scope.mouseDowm = false;
+
+    $scope.onDown = function(event){
+        var x = event.offsetX / event.target.clientWidth  * event.target.width,
+            y = event.offsetY / event.target.clientHeight * event.target.height;
+        $scope.start = $scope.transform(x, y);
+        $scope.moveTransform = $scope.transform;
+    };
+
+    $scope.onMove = function(event){
+        var x = event.offsetX / event.target.clientWidth  * event.target.width,
+            y = event.offsetY / event.target.clientHeight * event.target.height;
+
+        $scope.mouse = $scope.transform(x, y);
+
+        if(!$scope.mouseDowm) 
+            return;  
+
+        var start = $scope.start,
+        end = $scope.moveTransform(x, y),
+        shift = {
+            x: (end.x - start.x)*0.1,
+            y: (start.y - end.y)*0.1
+        };
+
+        $scope.cursor = true;
+
+        $scope.center = {
+                x: $scope.center.x + shift.x,
+                y: $scope.center.y + shift.y
+            };         
+
+        $scope.onScale();
+    };
+
+
+    $scope.onScale = function(event){
+        var delta = event ? -0.05 * Math.sign(event.originalEvent.deltaY) : 0,
+            width =  ($scope.right - $scope.left) / 2 * (1 - delta),
+            height = ($scope.top - $scope.bottom) / 2 * (1 - delta);
+
+        var p = $scope.center;
+        
+        $scope.left = p.x - width;
+        $scope.right = p.x + width;
+        $scope.bottom = p.y - height;
+        $scope.top = p.y + height;  
+        $scope.draw();     
     };
 
     function setUp(){
@@ -70,6 +148,10 @@ app.controller("mainController", ["$scope", function($scope){
         $scope.right = 2.8;
         $scope.bottom = -2.1;
         $scope.top = 2.1;
+        $scope.center = {x: 0, y: 0};   
+        $scope.transform = createTransform(800, 600,
+                                        $scope.left, $scope.right,
+                                        $scope.bottom, $scope.top);    
     }
 }]);
 
@@ -101,7 +183,7 @@ function createTransform(width, height, left, right, bottom, top){
             x: x*(right - left)/ width + left ,
             y: - (y*(top - bottom)/ height + bottom)
         };
-    }
+    };
 }
 
 function newtonPool(n, coloringType){
@@ -126,8 +208,8 @@ function newtonPool(n, coloringType){
             'hybrid' : function(attractor, i, n){
                             var color = [0, 0, 0],
                                 brightness = n > 1 ? Math.log(1+i)/Math.log(n) : 0;
-                            for(var i = 0; i < 3; i++) 
-                                color[i] =  brightness * attractor.color[i];
+                            for(var j = 0; j < 3; j++) 
+                                color[j] =  brightness * attractor.color[j];
                             return color;
                        }
                      },
@@ -147,7 +229,7 @@ function newtonPool(n, coloringType){
         }
 
         return Colors.White; 
-    }
+    };
 
     function nextPoint(p){
         var x = p.x, y = p.y;   
@@ -172,7 +254,7 @@ Surrounding.prototype.contain = function(x, y) {
 
 function mandelbrotSet(n, coloringType){
       var colorings = {
-            'classic': function(i){ return Colors.Black; },
+            'classic': function(){ return Colors.Black; },
             'zebra'  : function(i){ return i % 2 === 0 ? Colors.White : Colors.Black; },
             'levels' : function(i, n){
                            var brightness = n > 1 ? 255*Math.log(1+i)/Math.log(n) : 0;
@@ -193,7 +275,7 @@ function mandelbrotSet(n, coloringType){
         }
 
         return Colors.White; 
-    } 
+    };
 
     function nextPoint(z, c){
         return {
@@ -205,7 +287,7 @@ function mandelbrotSet(n, coloringType){
 
 function juliaSet(n, coloringType, data){
       var colorings = {
-            'classic': function(i){ return Colors.Black; },
+            'classic': function(){ return Colors.Black; },
             'zebra'  : function(i){ return i % 2 === 0 ? Colors.White : Colors.Black; },
             'levels' : function(i, n){
                            var brightness = n > 1 ? 255*Math.log(1+i)/Math.log(n) : 0;
@@ -225,7 +307,7 @@ function juliaSet(n, coloringType, data){
         }
 
         return Colors.White;    
-    } 
+    }; 
 
     function nextPoint(z, c){ 
         return {

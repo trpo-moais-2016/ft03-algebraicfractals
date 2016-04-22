@@ -13,6 +13,9 @@
     <link href="bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap theme -->
     <link href="bower_components/bootstrap/dist/css/bootstrap-theme.min.css" rel="stylesheet">
+    <style type="text/css">
+        .cursor {cursor: all-scroll;}
+    </style>
   </head>
 
   <body>
@@ -22,20 +25,24 @@
         
         <div class="row">
             <div class="col-md-8 thumbnail">
-                <canvas width="800" height="600" id="fractal" style="width:100%;" drawing="fractal"></canvas>
+                <canvas width="800" height="600" id="fractal" style="width:100%;" 
+                        drawing="fractal"
+                        ng-class="{
+                            cursor: cursor
+                        }"></canvas>
             </div>
 
             <div class="col-md-4">
                 <div class="thumbnail">
                     <label>Фрактал:</label>
-                    <select class="form-control" ng-model="fractal">
+                    <select class="form-control" ng-model="fractal" ng-change="draw()">
                         <option ng-repeat="(type, name) in fractals" ng-bind="name" ng-value="type"></option>
                     </select> 
 
                     <label>Раскраска:</label>
-                    <select class="form-control" ng-model="coloringType">
+                    <select class="form-control" ng-model="coloringType" ng-change="draw()">
                         <option ng-repeat="(type, name) in coloring" ng-bind="name" ng-value="type"></option>
-                        <option ng-disabled="fractal != undefined && fractal != 'newtonPool'" 
+                        <option ng-hide="fractal != undefined && fractal != 'newtonPool'" 
                                 ng-bind="'Гибридная'" ng-value="'hybrid'"></option>
                     </select> 
 
@@ -43,19 +50,13 @@
                         <label>Константа Жюлиа</label>
                         <div class="input-group">
                             <span class="input-group-addon">x</span>
-                            <input class="form-control" ng-model="juliaConstant.x" requried type="number">
+                            <input class="form-control" ng-model="juliaConstant.x" requried type="number" ng-change="draw()">
                         </div>
                         <br>
                         <div class="input-group">
                             <span class="input-group-addon">y</span>
-                            <input class="form-control" ng-model="juliaConstant.y" requried type="number">
+                            <input class="form-control" ng-model="juliaConstant.y" requried type="number" ng-change="draw()">
                         </div>
-                    </div>
-
-
-                    <br>
-                    <div align="center">
-                        <button class="btn btn-default" ng-click="draw()">Построить</button>
                     </div>
                 </div>
 
@@ -63,15 +64,30 @@
                     <label>Масштаб</label>
                     <div style="text-align: center;">
                         <div class="row">
-                            <p class="col-md-12">top: <span ng-bind="top"></span></p>
+                            <p class="col-md-12">top: <span ng-bind="top | number : 6"></span></p>
                         </div>
                         <div class="row">
-                            <p class="col-md-6">left: <span ng-bind="left"></span></p> 
-                            <p class="col-md-6">right: <span ng-bind="right"></span></p>
+                            <p class="col-md-6">left: <span ng-bind="left | number : 6"></span></p> 
+                            <p class="col-md-6">right: <span ng-bind="right | number : 6"></span></p>
                         </div>
                         <div class="row">
-                            <p class="col-md-12">bottom: <span ng-bind="bottom"></span></p>
+                            <p class="col-md-12">bottom: <span ng-bind="bottom | number : 6"></span></p>
                         </div>
+                        <div class="row">
+                            <p class="col-md-6">x:  <span ng-bind="mouse.x | number : 6"></span></p>
+                            <p class="col-md-6">y:  <span ng-bind="mouse.y | number : 6"></span></p>
+                        </div> 
+                        <button class="btn btn-default" ng-click="setUp()">Сбросить масштаб</button>
+                    </div>
+                </div>
+
+                <div class="thumbnail">
+                    <label>Указатель</label>
+                    <div style="text-align: center;">
+                        <div class="row">
+                            <p class="col-md-6">x:  <span ng-bind="mouse.x | number : 6"></span></p>
+                            <p class="col-md-6">y:  <span ng-bind="mouse.y | number : 6"></span></p>
+                        </div> 
                         <button class="btn btn-default" ng-click="setUp()">Сбросить масштаб</button>
                     </div>
                 </div>
