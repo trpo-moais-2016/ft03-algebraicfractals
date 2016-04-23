@@ -61,12 +61,12 @@
                 </div>
 
                 <div class="thumbnail">
-                    <div class="input-group" data-toggle="tooltip" title="Внимание! Количество итерации замедляет прерисовку фрактала. Увеличевайте количество итераций, когда это действительно необходимо.">
+                    <p class="input-group" data-toggle="tooltip" title="Внимание! Количество итерации замедляет прерисовку фрактала. Увеличевайте количество итераций, когда это действительно необходимо.">
                         <span class="input-group-addon">Количестов итераций:</span>
                         <span class="input-group-addon ng-binding" ng-bind="n"></span>
                         <input min="30" max="200" class="form-control" ng-model="n" type="range">
-                    </div>
-                    <br>
+                    </p>
+                    
                     <div style="text-align: center;"> 
                         <button class="btn btn-default" ng-click="draw()">Перерисовать</button>
                     </div>
@@ -74,6 +74,8 @@
 
                 <div class="thumbnail">
                     <label>Масштаб</label>
+                    <p>Колесико мыши: увеличение\уменьшение</p>
+                    <p>Левая кнопка мыши: перемещение</p>
                     <div style="text-align: center;">
                         <div class="row">
                             <p class="col-sm-12">top: <span ng-bind="top | number : 6"></span></p>
