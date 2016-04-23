@@ -10,29 +10,38 @@ var Colors = {
     Black: [0, 0, 0]
 };
 
+var Width = 800,
+    Height = 600;
+
+$('[data-toggle="tooltip"]').tooltip();
+
 app.directive("drawing", function(){
   return {
     restrict: "A",
     link: function(scope, element, attr){
         var ctx = element[0].getContext('2d');
 
-        ctx.width = Number(attr.width);
-        ctx.height = Number(attr.height);
-
         element.bind('mousedown', function(event){
             scope.mouseDowm = true;
+            scope.cursor = true;
             scope.onDown(event);
             scope.$apply();
         });
 
-        element.bind('mouseup', function(){
+        element.bind('mouseup', function(event){
             scope.mouseDowm = false;
             scope.cursor = false;
+            scope.onUp(event);
             scope.$apply();
         });
 
         element.bind('mousemove', function(event){
             scope.onMove(event);
+            scope.$apply();
+        });
+
+        element.bind('mousemove', function(event){
+            scope.onMoveCanvas(event);
             scope.$apply();
         });
 
@@ -47,8 +56,7 @@ app.directive("drawing", function(){
   };
 });
 
-
-app.controller("mainController", ["$scope", function($scope){
+app.controller("mainController", ["$scope", "$timeout", function($scope, $timeout){
     var ctx;
     var fractals = {
         newtonPool: newtonPool,
@@ -61,26 +69,24 @@ app.controller("mainController", ["$scope", function($scope){
         'mandelbrotSet':'Множество Мандельброта',
         'juliaSet': 'Множество Жюлиа'
     };
-
     $scope.coloring = {
         'classic': 'Классическая',
         'levels': 'Уровни',
         'zebra': 'Зебра'
     };
-
     $scope.juliaConstant = {x: -0.12, y: 0.74};
-    $scope.scaling = 'plus';
+    $scope.n = 30;
 
     setUp();
 
     $scope.draw = function(context){
         ctx = ctx || context;
 
-        $scope.transform = createTransform(ctx.width, ctx.height,
+        $scope.transform = createTransform(Width, Height,
                                         $scope.left, $scope.right,
                                         $scope.bottom, $scope.top);
 
-        var colorize = fractals[$scope.fractal || 'newtonPool'](50, 
+        var colorize = fractals[$scope.fractal || 'newtonPool']($scope.n, 
                                                                 $scope.coloringType || 'classic',
                                                                 $scope);
         draw(ctx, $scope.transform, colorize);
@@ -91,42 +97,73 @@ app.controller("mainController", ["$scope", function($scope){
         $scope.draw();
     };
 
-    $scope.center = {x: 0, y: 0};
+    function setUp(){
+        $scope.left = -2.8;
+        $scope.right = 2.8;
+        $scope.bottom = -2.1;
+        $scope.top = 2.1;
+        $scope.center = {x: 0, y: 0};   
+        $scope.transform = createTransform(Width, Height,
+                                        $scope.left, $scope.right,
+                                        $scope.bottom, $scope.top);    
+    }
+
+    //
+    // Обработка мыши
+    //
+
     $scope.mouse = {x: 0, y: 0};
     $scope.mouseDowm = false;
 
     $scope.onDown = function(event){
-        var x = event.offsetX / event.target.clientWidth  * event.target.width,
-            y = event.offsetY / event.target.clientHeight * event.target.height;
-        $scope.start = $scope.transform(x, y);
+        var cursor = getCursorPosition(event);
+        $scope.start = $scope.transform(cursor.x, cursor.y);
         $scope.moveTransform = $scope.transform;
     };
 
     $scope.onMove = function(event){
-        var x = event.offsetX / event.target.clientWidth  * event.target.width,
-            y = event.offsetY / event.target.clientHeight * event.target.height;
+        var cursor = getCursorPosition(event);
+        $scope.mouse = $scope.transform(cursor.x, cursor.y);
+    };
 
-        $scope.mouse = $scope.transform(x, y);
-
+    $scope.onMoveCanvas = function(event){
         if(!$scope.mouseDowm) 
             return;  
 
-        var start = $scope.start,
-        end = $scope.moveTransform(x, y),
-        shift = {
-            x: (end.x - start.x)*0.1,
-            y: (start.y - end.y)*0.1
-        };
+        var cursor = getCursorPosition(event),
+            start = $scope.start,
+            end = $scope.moveTransform(cursor.x, cursor.y);
 
-        $scope.cursor = true;
+        $scope.shift = {
+                x:  (end.x - start.x)*0.1,
+                y: -(end.y - start.y)*0.1
+            };
 
-        $scope.center = {
-                x: $scope.center.x + shift.x,
-                y: $scope.center.y + shift.y
-            };         
+        $timeout.cancel($scope.movingTimer);
+        $scope.movingTimer = $timeout(movingCanvas, 20);
+    };
+
+    function movingCanvas(){
+        var center = $scope.center,
+            shift  = $scope.shift;    
+        
+        center.x = center.x + shift.x;
+        center.y = center.y + shift.y;
 
         $scope.onScale();
+        $scope.movingTimer = $timeout(movingCanvas, 20);
+    }
+
+    $scope.onUp = function(){
+        $timeout.cancel($scope.movingTimer);
     };
+
+    function getCursorPosition(event){
+        return {
+            x: event.offsetX / event.target.clientWidth  * event.target.width,
+            y: event.offsetY / event.target.clientHeight * event.target.height
+        };
+    }
 
 
     $scope.onScale = function(event){
@@ -141,27 +178,19 @@ app.controller("mainController", ["$scope", function($scope){
         $scope.bottom = p.y - height;
         $scope.top = p.y + height;  
         $scope.draw();     
-    };
-
-    function setUp(){
-        $scope.left = -2.8;
-        $scope.right = 2.8;
-        $scope.bottom = -2.1;
-        $scope.top = 2.1;
-        $scope.center = {x: 0, y: 0};   
-        $scope.transform = createTransform(800, 600,
-                                        $scope.left, $scope.right,
-                                        $scope.bottom, $scope.top);    
-    }
+    };    
 }]);
 
-function draw(ctx, transform, colorize){
-    var width = ctx.width, 
-        height = ctx.height,
-        imgData = ctx.getImageData(0, 0, width, height);
 
-    for(var x = 0; x < width; x++)
-        for(var y = 0; y < height; y++){
+//
+// Попиксельная отрисовка фракталаы
+//
+
+function draw(ctx, transform, colorize){
+    var imgData = ctx.getImageData(0, 0, Width, Height);
+
+    for(var x = 0; x < Width; x++)
+        for(var y = 0; y < Height; y++){
            setPixel(x, y, colorize(transform(x, y)) );
         }
 
@@ -169,7 +198,7 @@ function draw(ctx, transform, colorize){
 
     function setPixel(x, y, rgb){
         var data = imgData.data;
-        var i = y * (width * 4) + x * 4;
+        var i = y * (Width * 4) + x * 4;
 
         for(var c = 0; c < 3; c++)
             data[i + c] = rgb[c];
@@ -185,6 +214,10 @@ function createTransform(width, height, left, right, bottom, top){
         };
     };
 }
+
+//
+// Бассейны Ньютона
+//
 
 function newtonPool(n, coloringType){
 
@@ -241,6 +274,8 @@ function newtonPool(n, coloringType){
     }
 }
 
+// Окрестности
+
 function Surrounding(x, y, color){
     this.x = x;
     this.y = y;
@@ -251,6 +286,10 @@ function Surrounding(x, y, color){
 Surrounding.prototype.contain = function(x, y) {
     return Math.abs(x - this.x) <= this.eps && Math.abs(y - this.y) <= this.eps;
 };
+
+//
+// Множество Мандельброта
+//
 
 function mandelbrotSet(n, coloringType){
       var colorings = {
@@ -284,6 +323,10 @@ function mandelbrotSet(n, coloringType){
         };
     }
 }
+
+//
+// Множество Жюлиа
+//
 
 function juliaSet(n, coloringType, data){
       var colorings = {
