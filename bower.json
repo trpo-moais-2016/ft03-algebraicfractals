@@ -1,0 +1,17 @@
+{
+  "name": "3",
+  "authors": [
+    "Suhoy95 <suhoy95@gmail.com>"
+  ],
+  "description": "",
+  "main": "",
+  "moduleType": [],
+  "license": "MIT",
+  "homepage": "",
+  "private": true,
+  "dependencies": {
+    "angular": "^1.5.2",
+    "bootstrap": "^3.3.6",
+    "jquery": "^2.2.2"
+  }
+}

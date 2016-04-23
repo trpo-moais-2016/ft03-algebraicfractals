@@ -1,80 +1,116 @@
-<!doctype html>
-<html>
-<head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-	<meta http-equiv="Cache-Control" content="no-cache"/>
-	
-	<script>
-        HTMLCanvasElement.prototype.relMouseCoords = function (event) {
-            var totalOffsetX = 0;
-            var totalOffsetY = 0;
-            var canvasX = 0;
-            var canvasY = 0;
-            var currentElement = this;
+<!DOCTYPE html>
+<html ng-app="app">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="suhoy">
+    <link rel="shortcut icon" href="">
 
-            do {
-                totalOffsetX += currentElement.offsetLeft;
-                totalOffsetY += currentElement.offsetTop;
-            }
-            while (currentElement = currentElement.offsetParent)
+    <title>Фрактальная графика</title>
 
-            canvasX = event.pageX - totalOffsetX;
-            canvasY = event.pageY - totalOffsetY;
+    <!-- Bootstrap core CSS -->
+    <link href="bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap theme -->
+    <link href="bower_components/bootstrap/dist/css/bootstrap-theme.min.css" rel="stylesheet">
+    <style type="text/css">
+        .cursor {cursor: all-scroll;}
+    </style>
+  </head>
 
-            // Fix for variable canvas width
-            canvasX = Math.round( canvasX * (this.width / this.offsetWidth) );
-            canvasY = Math.round( canvasY * (this.height / this.offsetHeight) );
+  <body>
 
-            return {x:canvasX, y:canvasY}
-        }
+    <div class="container" ng-controller="mainController">
+        <h1 class="page-header" style="margin: 2px 0 10px 0">Алгебраические фракталы</h1>
         
-		//пример рисования произвольного множества точек
-		function example(canvas) {
-			var canvasHeight = parseInt(canvas.getAttribute("height"));
-			var canvasWidth = parseInt(canvas.getAttribute("width"));
-			
-			//создаем 2d context
-			var context = canvas.getContext('2d');
-			
-			//создаем "буфер" imageData, в который будем класть новую информацию о цветах
-			var imageData = context.createImageData(canvasWidth, canvasHeight);
-			for (var i = 0; i < canvasWidth; i++) {
-				for (var j = 0; j < canvasHeight; j++) {
-					var red = 0;
-					var green = 0;
-					var blue = (i + j) % 255;
-					if (i % 20 == 0)
-						red = 150;
-					if (j % 20 == 0)
-						green = 150;
-					var opacity = 255;
-					
-					imageData.data[4*(i + canvasWidth*j) + 0] = red;
-					imageData.data[4*(i + canvasWidth*j) + 1] = green;
-					imageData.data[4*(i + canvasWidth*j) + 2] = blue;
-					imageData.data[4*(i + canvasWidth*j) + 3] = opacity;
-				}
-			}
-			//заполненный "буфер" imageData передаем в context для вывода на экран
-			context.putImageData(imageData, 0, 0);
-		}
-        
-        function mouseDownHandler(canvas, e) {
-	        var coords = canvas.relMouseCoords(e);
-	        alert("x=" + coords.x + " " + "y=" + coords.y);
-        }
-		
-		//вызывается после загрузки body
-		function run () {
-            var canvas = document.getElementById("canvas");
-            canvas.addEventListener("mousedown",
-                function(e) { mouseDownHandler(canvas, e); },
-                false);
-			example(canvas);
-		}
-	</script>
+        <div class="row">
+            <div class="col-md-8 thumbnail">
+                <canvas width="800" height="600" id="fractal" style="width:100%;" 
+                        drawing="fractal"
+                        ng-class="{
+                            cursor: cursor
+                        }"></canvas>
+            </div>
 
-<body onload="run()">
-  <canvas height='200' width='200' id='canvas'></canvas>
-</body>
+            <div class="col-md-4">
+                <div class="thumbnail">
+                    <label>Фрактал:</label>
+                    <select class="form-control" ng-model="fractal" ng-change="draw()">
+                        <option ng-repeat="(type, name) in fractals" ng-bind="name" ng-value="type"></option>
+                    </select> 
+
+                    <label>Раскраска:</label>
+                    <select class="form-control" ng-model="coloringType" ng-change="draw()">
+                        <option ng-repeat="(type, name) in coloring" ng-bind="name" ng-value="type"></option>
+                        <option ng-hide="fractal != undefined && fractal != 'newtonPool'" 
+                                ng-bind="'Гибридная'" ng-value="'hybrid'"></option>
+                    </select> 
+
+                    <div ng-show="fractal == 'juliaSet'">
+                        <label>Константа Жюлиа</label>
+                        <div class="input-group">
+                            <span class="input-group-addon">x</span>
+                            <input class="form-control" ng-model="juliaConstant.x" requried type="number" ng-change="draw()">
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">y</span>
+                            <input class="form-control" ng-model="juliaConstant.y" requried type="number" ng-change="draw()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="thumbnail">
+                    <p class="input-group" data-toggle="tooltip" title="Внимание! Количество итерации замедляет прерисовку фрактала. Увеличевайте количество итераций, когда это действительно необходимо.">
+                        <span class="input-group-addon">Количестов итераций:</span>
+                        <span class="input-group-addon ng-binding" ng-bind="n"></span>
+                        <input min="30" max="200" class="form-control" ng-model="n" type="range">
+                    </p>
+                    
+                    <div style="text-align: center;"> 
+                        <button class="btn btn-default" ng-click="draw()">Перерисовать</button>
+                    </div>
+                </div>
+
+                <div class="thumbnail">
+                    <label>Масштаб</label>
+                    <p>Колесико мыши: увеличение\уменьшение</p>
+                    <p>Левая кнопка мыши: перемещение</p>
+                    <div style="text-align: center;">
+                        <div class="row">
+                            <p class="col-sm-12">top: <span ng-bind="top | number : 6"></span></p>
+                        </div>
+                        <div class="row">
+                            <p class="col-sm-6">left: <span ng-bind="left | number : 6"></span></p> 
+                            <p class="col-sm-6">right: <span ng-bind="right | number : 6"></span></p>
+                        </div>
+                        <div class="row">
+                            <p class="col-sm-12">bottom: <span ng-bind="bottom | number : 6"></span></p>
+                        </div> 
+                        <button class="btn btn-default" ng-click="setUp()">Сбросить масштаб</button>
+                    </div>
+                </div>
+
+                <div class="thumbnail">
+                    <label>Указатель</label>
+                    <div style="text-align: center;">
+                        <div class="row">
+                            <p class="col-sm-6">x:  <span ng-bind="mouse.x | number : 6"></span></p>
+                            <p class="col-sm-6">y:  <span ng-bind="mouse.y | number : 6"></span></p>
+                        </div> 
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- /container -->
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="bower_components/jquery/dist/jquery.js"></script> 
+    <script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="bower_components/angular/angular.js"></script>
+    <script src="js/app.js"></script> 
+  </body>
 </html>
